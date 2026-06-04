@@ -23,7 +23,7 @@ Swift "eyes & hands" app (capture + Accessibility-tree grounding + CGEvent actua
 Planner `QWEN3_4B_INST_Q4_K_M` (+ `GPT_OSS_20B`/`QWEN3_8B` for the peer) · STT `WHISPER_EN_TINY_Q8_0` · TTS `TTS_EN_SUPERTONIC_Q8_0` · OCR doctr · health MedPsy-4B · RAG `GTE_LARGE_FP16`. P2P: `startQVACProvider` + `loadModel({delegate:{providerPublicKey, fallbackToLocal:true}})`.
 
 ## Repo layout
-`spike/` validated probes (reference) · `brain/` Node brain (Phase 1+) · `app/` Swift fork of clicky (Phase 2+).
+`spike/` validated probes (reference) · `brain/` Node brain (Phase 1+) · `app/` Swift fork of clicky (Phase 2+) · `QVAC_FEEDBACK.md` SDK field feedback for the Tether/QVAC team (bugs, footguns, DX — hand off later).
 
 ## Status & next step
 Spike ✅. Plan locked. **Phase 1 ✅ (brain skeleton)** — full `perceive→plan→show→act→verify` loop in `brain/` vs `mockHands`, real QVAC STT/planner/TTS, all 5 `PLAN.md §13` tests passing, one worker, clean exit. Run: `cd brain && node acceptance.js`.
