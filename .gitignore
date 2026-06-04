@@ -1,0 +1,35 @@
+# Dependencies (huge — native QVAC prebuilds ~5.4 GB). The bare `node_modules`
+# line also ignores brain/node_modules, which is a SYMLINK to spike/node_modules.
+node_modules
+node_modules/
+**/node_modules/
+
+# Model / data caches (QVAC caches in ~/.qvac, but ignore any local copies)
+*.gguf
+*.onnx
+*.bin
+.qvac/
+
+# Spike / runtime artifacts
+spike/screen.png
+spike/tts_out.wav
+*.wav
+*.png
+*.jpg
+*.pcm
+*.sock
+turn-*.jsonl
+*.log
+brain/logs/
+
+# macOS / Xcode
+.DS_Store
+app/**/xcuserdata/
+app/**/*.xcuserstate
+build/
+DerivedData/
+
+# Secrets / local config (never commit wallet keys, etc.)
+.env
+.env.local
+*.secret

@@ -1,0 +1,14 @@
+{
+  "name": "veil-brain",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Veil brain — Node/@qvac/sdk orchestrator (Phase 1: skeleton vs mock hands)",
+  "scripts": {
+    "turn": "node runTurn.js",
+    "accept": "node acceptance.js"
+  },
+  "dependencies": {
+    "@qvac/sdk": "^0.12.1"
+  }
+}

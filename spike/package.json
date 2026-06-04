@@ -1,0 +1,9 @@
+{
+  "name": "qvac-spike",
+  "private": true,
+  "type": "module",
+  "version": "0.0.1",
+  "dependencies": {
+    "@qvac/sdk": "^0.12.1"
+  }
+}
