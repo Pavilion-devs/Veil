@@ -8,6 +8,7 @@ import { plan, validateAction, SYSTEM_PROMPT } from "./planner.js";
 import { execute, isUiAction } from "./executor.js";
 import { verify } from "./verifier.js";
 import { stt, tts } from "./voice.js";
+import { analyzeLabs } from "./skills/health.js";
 
 function describeAction(a) {
   switch (a.action) {
@@ -69,6 +70,7 @@ export async function runTurn({
   let status = "max_steps";
   let finalText = "";
   let ttsSeq = 0;
+  let lastHealth = null; // last query_health result (artifact for the caller)
 
   const say = async (text) => {
     if (!text) return null;
@@ -172,6 +174,27 @@ export async function runTurn({
       steps.push(step);
       continue;
     }
+    if (action.action === "query_health") {
+      // Hero health skill: OCR the on-screen lab document → MedPsy → speak.
+      const cap = await hands.captureScreen();
+      if (!cap?.pngPath) {
+        await say("I don't see a lab document open. Please open your labs first.");
+        pendingFeedback = "No document is visible on screen to read. Open the labs first, then try again.";
+        step.outcome = "health_no_doc";
+        steps.push(step);
+        continue;
+      }
+      const result = await analyzeLabs(qvac, { imagePath: cap.pngPath, log: (o) => logger.log(o) });
+      lastHealth = result;
+      onEvent({ event: "health", data: { flagged: result.flagged, analysis: result.analysis } });
+      logger.log({ phase: "health", msg: "analysis", flagged: result.flagged, analysis: result.analysis });
+      await say(result.spoken);
+      step.outcome = "health";
+      step.health = { flagged: result.flagged.length };
+      steps.push(step);
+      pendingFeedback = "You read the lab document and reported the findings to the user. The health question is answered — return \"done\".";
+      continue;
+    }
 
     // --- 4. show overlay before acting (transparency + demo). Emit the Brain
     // API `step` event (action + overlay) so the Swift UI can animate. ---
@@ -249,7 +272,14 @@ export async function runTurn({
   }
 
   onEvent({ event: "done", data: { status, finalText, transcript, steps: steps.length } });
-  return { transcript, status, finalText, steps, ttsWavPath: ttsSeq ? path.join(ttsDir, `turn-${logger.turn}-spk-0.wav`) : null };
+  return {
+    transcript,
+    status,
+    finalText,
+    steps,
+    health: lastHealth,
+    ttsWavPath: ttsSeq ? path.join(ttsDir, `turn-${logger.turn}-spk-0.wav`) : null,
+  };
 }
 
 export { describeAction };

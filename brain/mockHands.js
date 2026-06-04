@@ -34,8 +34,17 @@ export class MockHands {
     this.searchQuery = "";
     this.focusedId = null; // nothing focused until the agent clicks a field
     this.frontApp = "Notes";
+    this.document = null; // an open doc in "Preview" (image with no AX content)
     this.lastOverlay = null;
     this.played = []; // record of playAudio calls (artifact for the demo)
+  }
+
+  // Simulate opening a document (e.g. a lab PDF) in Preview. The content has no
+  // accessibility text — exactly the case where the agent must OCR the screen.
+  showDocument(pngPath, title = "Document") {
+    this.document = { path: pngPath, title };
+    this.frontApp = "Preview";
+    this.focusedId = null;
   }
 
   // ---- internal helpers ----
@@ -55,15 +64,30 @@ export class MockHands {
 
   // ---- Hands API (PLAN §3.2) ----
 
-  // No real pixels in Phase 1 (verify is AX-diff). Return the stub the real
-  // ScreenCaptureKit path will later fill in.
+  // Returns the open document's image when one is shown (so the agent can OCR
+  // it); otherwise a null-png stub (Phase 1 verify is AX-diff, not pixels).
   async captureScreen() {
-    return { pngPath: null, width: 1440, height: 900, scale: 2 };
+    return { pngPath: this.document?.path ?? null, width: 1440, height: 900, scale: 2 };
   }
 
   // Grounded element list: [{id, role, label, value, bounds, enabled, focused}].
   // Rebuilt fresh each call from current state, so two snapshots diff cleanly.
   async getAXTree() {
+    // Preview showing a document: the content has no AX text — the agent sees
+    // only the document window and must OCR (query_health) to read it.
+    if (this.document) {
+      return [
+        {
+          id: 50,
+          role: "image",
+          label: `${this.document.title} (open in Preview)`,
+          value: "",
+          bounds: { x: 220, y: 120, w: 1000, h: 1300 },
+          enabled: true,
+          focused: true,
+        },
+      ];
+    }
     const tree = [];
     tree.push({
       id: NEW_NOTE,

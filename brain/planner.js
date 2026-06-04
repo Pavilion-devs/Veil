@@ -15,7 +15,7 @@ export const ACTION_SCHEMA = {
     thought: { type: "string" },
     action: {
       type: "string",
-      enum: ["click", "type", "key", "scroll", "open_app", "speak", "ask_user", "done"],
+      enum: ["click", "type", "key", "scroll", "open_app", "query_health", "speak", "ask_user", "done"],
     },
     targetId: { type: "integer" },
     text: { type: "string" },
@@ -36,6 +36,8 @@ export const SYSTEM_PROMPT = [
   '  key        — press a key combo in "keys" (e.g. "cmd+n").',
   "  scroll     — scroll the current view.",
   '  open_app   — open the app named in "text".',
+  "  query_health — read the lab/health document currently on screen and flag anything concerning.",
+  "               Use this when the user asks about their labs, results, or health and a document is visible.",
   '  speak      — say "text" to the user (no UI change).',
   '  ask_user   — ask a clarifying question in "text" when the command is ambiguous.',
   '  done       — the task is fully complete. Put a short spoken confirmation in "text".',
@@ -93,6 +95,7 @@ export function validateAction(a, elements) {
       if (!a.text) return { valid: false, reason: "ask_user requires a question in 'text'" };
       return { valid: true };
     case "scroll":
+    case "query_health":
     case "done":
       return { valid: true };
     default:

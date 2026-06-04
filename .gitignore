@@ -22,6 +22,9 @@ turn-*.jsonl
 *.log
 brain/logs/
 
+# ...but DO commit the health-skill OCR fixture (small, needed by tests)
+!brain/fixtures/labs.png
+
 # macOS / Xcode
 .DS_Store
 app/**/xcuserdata/

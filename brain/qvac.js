@@ -16,7 +16,12 @@ import {
   WHISPER_EN_TINY_Q8_0,
   TTS_EN_SUPERTONIC_Q8_0,
   VAD_SILERO_5_1_2,
+  OCR_RECOGNIZER_CRNN_MOBILENET_V3_SMALL,
+  OCR_DETECTOR_DB_MOBILENET_V3_LARGE,
 } from "@qvac/sdk";
+
+// MedPsy-4B loads by plain https URL — registry:// fails for this model (gotcha).
+const MEDPSY_URL = "https://huggingface.co/qvac/MedPsy-4B-GGUF/resolve/main/medpsy-4b-q4_k_m-imat.gguf";
 
 const WORKER_LOCK = path.join(os.homedir(), ".qvac", ".worker.lock");
 
@@ -46,6 +51,23 @@ export const MODELS = {
     modelSrc: TTS_EN_SUPERTONIC_Q8_0,
     modelType: "tts-ggml",
     modelConfig: { ttsEngine: "supertonic", language: "en" },
+  },
+  ocr: {
+    // doctr is the only OCR combo that works (CRAFT/PARSEQ are broken — see
+    // QVAC_FEEDBACK A3). Returns {text, bbox:[x1,y1,x2,y2], confidence}.
+    modelSrc: OCR_RECOGNIZER_CRNN_MOBILENET_V3_SMALL,
+    modelType: "onnx-ocr",
+    modelConfig: {
+      langList: ["en"],
+      detectorModelSrc: OCR_DETECTOR_DB_MOBILENET_V3_LARGE,
+      pipelineMode: "doctr",
+    },
+  },
+  medpsy: {
+    // Tether's clinical model — hero "health" skill. Swap-on-demand (~2.5 GB).
+    modelSrc: MEDPSY_URL,
+    modelType: "llamacpp-completion",
+    modelConfig: { ctx_size: 4096 },
   },
 };
 

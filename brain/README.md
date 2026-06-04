@@ -33,6 +33,10 @@ node brainMain.js       # terminal 2: brain connects, holds QVAC, streams transc
 > :wav /path/to/cmd.wav # stream a 16k mono s16le wav as if it were the mic (real audio path)
 node brainApiAcceptance.js   # automated: event stream + cancel over a real socket (2/2)
 node streamingAcceptance.js  # automated: streaming mic STT (Whisper+VAD) end-to-end (3/3)
+
+# --- Hero health skill: OCR a lab doc → MedPsy reasoning → speak (Phase 4, PLAN §7) ---
+node healthAcceptance.js     # doctr OCR → MedPsy flags abnormals → query_health loop (2/2)
+node fixtures/make-labs.js   # (re)render the sample lab report fixture (Chrome headless)
 ```
 
 > Single-worker rule: only one Node process may use QVAC at a time. The brain
@@ -52,7 +56,9 @@ node streamingAcceptance.js  # automated: streaming mic STT (Whisper+VAD) end-to
 | `planner.js` | Grammar-constrained `json_schema` action (PLAN §3.1); `targetId` enforced for `click` with one inline self-repair. |
 | `executor.js` | Action → Hands command(s). |
 | `verifier.js` | AX-diff (Decision §10.3): catches no-op / wrong / rejected actions and feeds the replan loop. |
-| `voice.js` | STT (Whisper tiny.en) in; TTS (Supertonic, **`stream:false`**) → 24 kHz WAV. |
+| `voice.js` | STT (Whisper tiny.en) one-shot + `StreamingTranscriber` (mic PCM + Silero VAD); TTS (Supertonic, **`stream:false`**) → 24 kHz WAV. |
+| `skills/health.js` | Hero health skill: doctr OCR (reading-order reconstructed) → MedPsy reasoning → speakable summary (strips the model's `<think>`). |
+| `fixtures/labs.html` + `make-labs.js` | Sample lab report (fake data) → `labs.png` via Chrome headless; the OCR fixture. |
 | `orchestrator.js` | The loop: perceive → plan → show → act → verify, with bounded replan + loop guard. |
 | `logging.js` | Structured JSONL, one line per step/event, per turn (`logs/turn-<n>.jsonl`). |
 | `ipc.js` | Bidirectional socket transport (PLAN §3.4): `RpcPeer` (request/respond + emit/on over one socket). Glue: `HandsClient`/`serveHands` (Hands API), `handsFromPeer`/`serveHandsOnPeer`. |
@@ -65,6 +71,7 @@ node streamingAcceptance.js  # automated: streaming mic STT (Whisper+VAD) end-to
 | `ipcAcceptance.js` | The agent loop over a real Unix socket (3/3). |
 | `brainApiAcceptance.js` | Brain API over a real socket: event stream + cancel (2/2). |
 | `streamingAcceptance.js` | Streaming mic STT (Whisper + Silero VAD) end-to-end (3/3). |
+| `healthAcceptance.js` | Hero health skill: OCR → MedPsy → speak, + the `query_health` loop (2/2). |
 | `PROTOCOL.md` | The brain⇄hands+brain wire contract — what the Swift teammate builds against. |
 
 ## Model stack (validated, all local)
