@@ -15,11 +15,14 @@ export const ACTION_SCHEMA = {
     thought: { type: "string" },
     action: {
       type: "string",
-      enum: ["click", "type", "key", "scroll", "open_app", "query_health", "speak", "ask_user", "done"],
+      enum: ["click", "type", "key", "scroll", "open_app", "query_health", "wallet_send", "speak", "ask_user", "done"],
     },
     targetId: { type: "integer" },
     text: { type: "string" },
     keys: { type: "string" },
+    amount: { type: "string" },
+    asset: { type: "string" },
+    to: { type: "string" },
   },
   required: ["thought", "action"],
 };
@@ -38,6 +41,9 @@ export const SYSTEM_PROMPT = [
   '  open_app   — open the app named in "text".',
   "  query_health — read the lab/health document currently on screen and flag anything concerning.",
   "               Use this when the user asks about their labs, results, or health and a document is visible.",
+  '  wallet_send — send crypto. Set "amount" (e.g. "0.5"), "asset" (e.g. "SOL"), and "to" (a name or address).',
+  "               ALWAYS use this to send/transfer funds. It fills the form AND runs the mandatory voice-confirm",
+  "               gate. NEVER fill a wallet form or click a Send/Confirm button yourself — that is blocked for safety.",
   '  speak      — say "text" to the user (no UI change).',
   '  ask_user   — ask a clarifying question in "text" when the command is ambiguous.',
   '  done       — the task is fully complete. Put a short spoken confirmation in "text".',
@@ -93,6 +99,10 @@ export function validateAction(a, elements) {
       return { valid: true };
     case "ask_user":
       if (!a.text) return { valid: false, reason: "ask_user requires a question in 'text'" };
+      return { valid: true };
+    case "wallet_send":
+      if (!a.amount) return { valid: false, reason: "wallet_send requires an 'amount'" };
+      if (!a.to) return { valid: false, reason: "wallet_send requires a recipient in 'to'" };
       return { valid: true };
     case "scroll":
     case "query_health":

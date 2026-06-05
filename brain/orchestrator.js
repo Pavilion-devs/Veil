@@ -9,6 +9,7 @@ import { execute, isUiAction } from "./executor.js";
 import { verify } from "./verifier.js";
 import { stt, tts } from "./voice.js";
 import { analyzeLabs } from "./skills/health.js";
+import { walletSend } from "./skills/wallet.js";
 
 function describeAction(a) {
   switch (a.action) {
@@ -35,6 +36,12 @@ function describeAction(a) {
 
 const summarizeDiff = (d) => `+${d.added.length} -${d.removed.length} ~${d.changed.length}`;
 
+// Money safety: detect a wallet screen and its transaction-submit controls, so
+// the agent can NEVER submit a transfer by clicking — only the gated wallet_send
+// path (which runs the voice-confirm) may submit.
+const isWalletScreen = (elements) => elements.some((e) => /phantom|solflare|\bwallet\b/i.test(e.label));
+const isSubmitControl = (el) => el?.role === "button" && /\bsend\b|confirm|approve|sign|submit/i.test(el.label);
+
 // Run one full turn. Returns { transcript, status, finalText, steps, ttsWavPath }.
 export async function runTurn({
   qvac,
@@ -50,6 +57,7 @@ export async function runTurn({
   onEvent = () => {}, // Brain API stream (§3.3): transcript | step | speak | done
   cancelToken = { cancelled: false }, // set .cancelled to abort between steps
   peer = null, // optional PeerLink (P2P §6): hard steps delegate to a big peer model
+  confirm = null, // async (phrase)->bool: the wallet voice-confirm gate (fail-closed if null)
 }) {
   ttsDir = ttsDir ?? path.dirname(logger.file);
 
@@ -72,6 +80,7 @@ export async function runTurn({
   let finalText = "";
   let ttsSeq = 0;
   let lastHealth = null; // last query_health result (artifact for the caller)
+  let lastWallet = null; // last wallet_send result (artifact for the caller)
   let escalate = false; // route the next plan to the peer (set after a struggle)
 
   const say = async (text) => {
@@ -207,6 +216,53 @@ export async function runTurn({
       pendingFeedback = "You read the lab document and reported the findings to the user. The health question is answered — return \"done\".";
       continue;
     }
+    if (action.action === "wallet_send") {
+      // Hero money skill: fill the send form, then a MANDATORY voice-confirm
+      // gate (fail-closed) before anything is submitted. Devnet only.
+      const gate = async (phrase) => {
+        onEvent({ event: "confirm", data: { phrase } });
+        await say(phrase); // the brain speaks the confirmation aloud
+        if (!confirm) return false; // no way to capture a yes/no → never send
+        try {
+          return (await confirm(phrase)) === true;
+        } catch {
+          return false;
+        }
+      };
+      const result = await walletSend({
+        hands,
+        amount: action.amount,
+        asset: action.asset || "SOL",
+        to: action.to,
+        confirm: gate,
+        log: (o) => logger.log(o),
+      });
+      lastWallet = result;
+      onEvent({ event: "wallet", data: result });
+      logger.log({ phase: "wallet", msg: result.submitted ? "submitted" : "not submitted", result });
+      await say(result.spoken);
+      step.outcome = result.submitted ? "wallet_sent" : "wallet_declined";
+      step.wallet = { submitted: result.submitted, confirmed: result.confirmed, amount: result.amount };
+      steps.push(step);
+      pendingFeedback = result.submitted
+        ? `You sent ${result.amount} ${result.asset} after the user confirmed. Return "done".`
+        : `The transfer was NOT sent (${result.reason}). Return "done".`;
+      continue;
+    }
+
+    // --- safety guard: a click must never submit a transfer. Force wallet_send
+    // (which runs the voice-confirm gate) instead. Defense-in-depth so a manual
+    // click on a wallet's Send/Confirm can't bypass the gate. ---
+    if (action.action === "click" && isWalletScreen(elements) && isSubmitControl(findElement(elements, action.targetId))) {
+      onEvent({ event: "blocked", data: { reason: "manual wallet submit blocked — use wallet_send" } });
+      logger.log({ phase: "wallet", msg: "blocked manual submit", targetId: action.targetId });
+      pendingFeedback =
+        "Submitting a transfer by clicking is BLOCKED for safety. Use the wallet_send action " +
+        "(set amount, asset, to) — it fills the form and runs the required voice-confirm gate.";
+      step.outcome = "blocked_submit";
+      steps.push(step);
+      continue;
+    }
 
     // --- 4. show overlay before acting (transparency + demo). Emit the Brain
     // API `step` event (action + overlay) so the Swift UI can animate. ---
@@ -292,6 +348,7 @@ export async function runTurn({
     finalText,
     steps,
     health: lastHealth,
+    wallet: lastWallet,
     ttsWavPath: ttsSeq ? path.join(ttsDir, `turn-${logger.turn}-spk-0.wav`) : null,
   };
 }

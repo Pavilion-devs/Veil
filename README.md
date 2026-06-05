@@ -64,13 +64,14 @@ reference socket app). The Swift "eyes & hands" app is the next major piece.
 | Brain API: `runTurn`/`cancel` + event stream | ✅ | `brainApiAcceptance.js` 2/2 |
 | Streaming mic STT (Whisper tiny.en + Silero VAD) | ✅ | `streamingAcceptance.js` 3/3 |
 | **Health skill: OCR → MedPsy → speak** | ✅ | `healthAcceptance.js` 2/2 |
+| **Wallet skill: devnet send + voice-confirm gate** | ✅ | `walletAcceptance.js` 6/6 |
 | **P2P tiered intelligence (routing + fallback)** | ✅ scaffold | `p2pAcceptance.js` 4/4 |
 | Swift eyes & hands app | ⏳ next | builds against `brain/PROTOCOL.md` |
-| Wallet skill (Solana devnet + voice-confirm) | ⏳ | Phase 4 |
+| Wallet grounding on real Chrome/Phantom | ⏳ | needs the Swift app (OCR-first, §9) |
 | P2P cross-machine offload (big model on a peer) | ⏳ | needs the teammate's box |
 
 All on-device, single QVAC worker, with orphan-reap + clean shutdown.
-**19 automated tests across 6 suites, all green.**
+**25 automated tests across 7 suites, all green.**
 
 ## Quickstart (the brain, no Swift needed)
 
@@ -87,6 +88,7 @@ node brainApiAcceptance.js    # Brain API events + cancel (2/2)
 node streamingAcceptance.js   # streaming mic STT end-to-end (3/3)
 node healthAcceptance.js      # MedPsy health skill: OCR → reason → speak (2/2)
 node p2pAcceptance.js         # P2P routing: provider, offline-detect, fallback (4/4)
+node walletAcceptance.js      # devnet send + voice-confirm gate (6/6)
 
 # Interactive: app + brain in two terminals (push-to-talk from stdin):
 node refApp.js                # terminal 1 (listens, serves hands)

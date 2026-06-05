@@ -13,7 +13,7 @@ import { StreamingTranscriber } from "./voice.js";
 import { runTurn } from "./orchestrator.js";
 import { TurnLogger } from "./logging.js";
 
-export function attachBrain(peer, { qvac, hands, logDir, turnBase = 0, peerLink = null }) {
+export function attachBrain(peer, { qvac, hands, logDir, turnBase = 0, peerLink = null, confirm = null }) {
   let turnNo = turnBase;
   let currentCancel = null;
   let activeTranscriber = null;
@@ -48,6 +48,7 @@ export function attachBrain(peer, { qvac, hands, logDir, turnBase = 0, peerLink 
         onEvent: (e) => peer.emit(e.event, e.data),
         cancelToken,
         peer: peerLink, // P2P: hard steps delegate to the big peer model (if configured)
+        confirm, // wallet voice-confirm gate (fail-closed if null)
       });
       return { status: r.status, finalText: r.finalText, transcript: r.transcript, steps: r.steps.length };
     } finally {

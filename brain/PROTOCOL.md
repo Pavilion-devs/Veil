@@ -95,10 +95,23 @@ One turn at a time: a second `runTurn` while one is running returns `{status:"bu
                              "overlay": { "x": 80, "y": 36, "label": "click [1]" } } }
 { "event": "delegate", "data": { "to": "peer", "reason": "hard step" } } // P2P: routing a hard step to the peer
 { "event": "health", "data": { "flagged": ["…"], "analysis": "…" } }     // health skill result
+{ "event": "confirm", "data": { "phrase": "Please confirm: send 0.5 SOL to Alex…" } } // wallet gate — capture yes/no
+{ "event": "wallet", "data": { "submitted": true, "amount": 0.5, "to": "…", "network": "devnet" } }
+{ "event": "blocked", "data": { "reason": "manual wallet submit blocked — use wallet_send" } }
 { "event": "speak", "data": { "text": "New note created." } }            // when the brain speaks
 { "event": "done",  "data": { "status": "done", "finalText": "…",        // turn end
                               "transcript": "…", "steps": 2 } }
 ```
+`action` is the planner's Action object (PLAN §3.1) —
+`{thought, action, targetId?, text?, keys?, amount?, asset?, to?}`.
+
+### Money safety (wallet)
+A transfer is **only ever submitted through `wallet_send`**, which fills the form
+and then runs a **mandatory voice-confirm gate**: the brain emits `confirm` +
+speaks the amount/recipient/network, and the app must capture the user's spoken
+"confirm"/"cancel" and return it. Nothing is sent without an explicit yes — and
+the brain **blocks** any direct click on a wallet Send/Confirm button (`blocked`
+event) so the gate can't be bypassed. Devnet only; keys never leave the device.
 The `delegate` event is the demo's "delegating to peer…" beat — show it while the
 big model runs on the teammate's box. If the peer is down the turn still completes
 (local fallback), so treat `delegate` as informational, not blocking.

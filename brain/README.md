@@ -42,6 +42,9 @@ node fixtures/make-labs.js   # (re)render the sample lab report fixture (Chrome 
 node p2pAcceptance.js        # provider start, offline-detect, local fallback, routing (4/4)
 node peerProvider.js         # run on the TEAMMATE's box; prints a public key to share
 VEIL_PEER_KEY=<key> node brainMain.js   # enable delegation from the brain
+
+# --- Hero money skill: devnet send + mandatory voice-confirm gate (Phase 4, PLAN §7/§10) ---
+node walletAcceptance.js     # confirmed→sent, declined→NOT sent, fail-closed, loop (6/6)
 ```
 
 > Single-worker rule: only one Node process may use QVAC at a time. The brain
@@ -66,6 +69,7 @@ VEIL_PEER_KEY=<key> node brainMain.js   # enable delegation from the brain
 | `fixtures/labs.html` + `make-labs.js` | Sample lab report (fake data) → `labs.png` via Chrome headless; the OCR fixture. |
 | `p2p.js` | `PeerLink` (P2P §6): registers a delegated big planner (`fallbackToLocal`), heartbeat online-check, DHT pre-warm. |
 | `peerProvider.js` | The teammate's `startQVACProvider` entrypoint — hosts the big model, prints its public key. |
+| `skills/wallet.js` + `mockWallet.js` | Hero money skill: fill a devnet send form, then a **mandatory voice-confirm gate** (fail-closed) before submitting. Devnet only. |
 | `orchestrator.js` | The loop: perceive → plan → show → act → verify, with bounded replan + loop guard. |
 | `logging.js` | Structured JSONL, one line per step/event, per turn (`logs/turn-<n>.jsonl`). |
 | `ipc.js` | Bidirectional socket transport (PLAN §3.4): `RpcPeer` (request/respond + emit/on over one socket). Glue: `HandsClient`/`serveHands` (Hands API), `handsFromPeer`/`serveHandsOnPeer`. |
@@ -80,6 +84,7 @@ VEIL_PEER_KEY=<key> node brainMain.js   # enable delegation from the brain
 | `streamingAcceptance.js` | Streaming mic STT (Whisper + Silero VAD) end-to-end (3/3). |
 | `healthAcceptance.js` | Hero health skill: OCR → MedPsy → speak, + the `query_health` loop (2/2). |
 | `p2pAcceptance.js` | P2P routing (single-machine): provider start, offline-detect, local fallback, escalation (4/4). |
+| `walletAcceptance.js` | Wallet skill: confirmed→sent, declined→NOT sent, fail-closed, loop integration (6/6). |
 | `PROTOCOL.md` | The brain⇄hands+brain wire contract — what the Swift teammate builds against. |
 
 ## Model stack (validated, all local)
