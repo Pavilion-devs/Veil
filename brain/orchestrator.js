@@ -49,6 +49,7 @@ export async function runTurn({
   ttsDir,
   onEvent = () => {}, // Brain API stream (§3.3): transcript | step | speak | done
   cancelToken = { cancelled: false }, // set .cancelled to abort between steps
+  peer = null, // optional PeerLink (P2P §6): hard steps delegate to a big peer model
 }) {
   ttsDir = ttsDir ?? path.dirname(logger.file);
 
@@ -71,6 +72,7 @@ export async function runTurn({
   let finalText = "";
   let ttsSeq = 0;
   let lastHealth = null; // last query_health result (artifact for the caller)
+  let escalate = false; // route the next plan to the peer (set after a struggle)
 
   const say = async (text) => {
     if (!text) return null;
@@ -107,11 +109,20 @@ export async function runTurn({
       raw = JSON.stringify(action);
       logger.log({ phase: "plan", msg: "injected first action", action });
     } else {
+      // Tiered intelligence (§6): after a struggle, route this plan to the big
+      // model on the peer (falls back to local if the peer is down).
+      const usePeer = !!(peer && escalate);
+      const role = usePeer ? peer.role : "planner";
+      if (usePeer) {
+        onEvent({ event: "delegate", data: { to: "peer", reason: "hard step" } });
+        logger.log({ phase: "p2p", msg: "delegating plan to peer (or local fallback)", role });
+      }
       ({ action, valid, reason, raw } = await plan({
         qvac,
         messages,
         elements,
         log: (o) => logger.log(o),
+        role,
       }));
     }
     messages.push({ role: "assistant", content: raw ?? JSON.stringify(action) });
@@ -135,9 +146,10 @@ export async function runTurn({
       }
     }
 
-    // --- invalid action -> feed back, replan ---
+    // --- invalid action -> feed back, replan (escalate to peer if available) ---
     if (!valid) {
       failures++;
+      if (peer) escalate = true;
       pendingFeedback = `Your previous reply was invalid: ${reason}. Choose a valid action.`;
       step.outcome = "invalid";
       steps.push(step);
@@ -233,6 +245,7 @@ export async function runTurn({
 
     if (!v.ok) {
       failures++;
+      if (peer) escalate = true; // next plan goes to the big peer model
       pendingFeedback =
         `Your last action (${describeAction(action)}) had no effect: ${v.reason}. ` +
         `The screen did not change. Pick a different action or a different targetId.`;
@@ -245,8 +258,9 @@ export async function runTurn({
       continue;
     }
 
-    // success -> reset failure streak, report progress, continue planning
+    // success -> reset failure streak (and de-escalate), report progress, continue
     failures = 0;
+    escalate = false;
     const typedNote =
       action.action === "type" ? ` The text ${JSON.stringify(action.text)} now appears in the focused field.` : "";
     pendingFeedback =

@@ -93,10 +93,15 @@ One turn at a time: a second `runTurn` while one is running returns `{status:"bu
 { "event": "transcript", "data": { "text": "create a new note" } }      // after STT
 { "event": "step", "data": { "i": 0, "action": {…Action…},              // before each UI act
                              "overlay": { "x": 80, "y": 36, "label": "click [1]" } } }
+{ "event": "delegate", "data": { "to": "peer", "reason": "hard step" } } // P2P: routing a hard step to the peer
+{ "event": "health", "data": { "flagged": ["…"], "analysis": "…" } }     // health skill result
 { "event": "speak", "data": { "text": "New note created." } }            // when the brain speaks
 { "event": "done",  "data": { "status": "done", "finalText": "…",        // turn end
                               "transcript": "…", "steps": 2 } }
 ```
+The `delegate` event is the demo's "delegating to peer…" beat — show it while the
+big model runs on the teammate's box. If the peer is down the turn still completes
+(local fallback), so treat `delegate` as informational, not blocking.
 The Swift UI should: show `transcript` as the heard text; on each `step`, animate
 the cursor to `overlay.{x,y}` (logical points) and label it; play TTS / show
 captions on `speak`; settle on `done`. `action` is the planner's Action object

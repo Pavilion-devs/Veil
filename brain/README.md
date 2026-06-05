@@ -37,6 +37,11 @@ node streamingAcceptance.js  # automated: streaming mic STT (Whisper+VAD) end-to
 # --- Hero health skill: OCR a lab doc → MedPsy reasoning → speak (Phase 4, PLAN §7) ---
 node healthAcceptance.js     # doctr OCR → MedPsy flags abnormals → query_health loop (2/2)
 node fixtures/make-labs.js   # (re)render the sample lab report fixture (Chrome headless)
+
+# --- P2P tiered intelligence: hard steps delegate to a big peer model (Phase 5, PLAN §6) ---
+node p2pAcceptance.js        # provider start, offline-detect, local fallback, routing (4/4)
+node peerProvider.js         # run on the TEAMMATE's box; prints a public key to share
+VEIL_PEER_KEY=<key> node brainMain.js   # enable delegation from the brain
 ```
 
 > Single-worker rule: only one Node process may use QVAC at a time. The brain
@@ -59,6 +64,8 @@ node fixtures/make-labs.js   # (re)render the sample lab report fixture (Chrome 
 | `voice.js` | STT (Whisper tiny.en) one-shot + `StreamingTranscriber` (mic PCM + Silero VAD); TTS (Supertonic, **`stream:false`**) → 24 kHz WAV. |
 | `skills/health.js` | Hero health skill: doctr OCR (reading-order reconstructed) → MedPsy reasoning → speakable summary (strips the model's `<think>`). |
 | `fixtures/labs.html` + `make-labs.js` | Sample lab report (fake data) → `labs.png` via Chrome headless; the OCR fixture. |
+| `p2p.js` | `PeerLink` (P2P §6): registers a delegated big planner (`fallbackToLocal`), heartbeat online-check, DHT pre-warm. |
+| `peerProvider.js` | The teammate's `startQVACProvider` entrypoint — hosts the big model, prints its public key. |
 | `orchestrator.js` | The loop: perceive → plan → show → act → verify, with bounded replan + loop guard. |
 | `logging.js` | Structured JSONL, one line per step/event, per turn (`logs/turn-<n>.jsonl`). |
 | `ipc.js` | Bidirectional socket transport (PLAN §3.4): `RpcPeer` (request/respond + emit/on over one socket). Glue: `HandsClient`/`serveHands` (Hands API), `handsFromPeer`/`serveHandsOnPeer`. |
@@ -72,6 +79,7 @@ node fixtures/make-labs.js   # (re)render the sample lab report fixture (Chrome 
 | `brainApiAcceptance.js` | Brain API over a real socket: event stream + cancel (2/2). |
 | `streamingAcceptance.js` | Streaming mic STT (Whisper + Silero VAD) end-to-end (3/3). |
 | `healthAcceptance.js` | Hero health skill: OCR → MedPsy → speak, + the `query_health` loop (2/2). |
+| `p2pAcceptance.js` | P2P routing (single-machine): provider start, offline-detect, local fallback, escalation (4/4). |
 | `PROTOCOL.md` | The brain⇄hands+brain wire contract — what the Swift teammate builds against. |
 
 ## Model stack (validated, all local)

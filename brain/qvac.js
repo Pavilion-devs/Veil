@@ -107,7 +107,15 @@ export class QvacManager {
     this.log = log;
     this.warm = new Map(); // role -> modelId
     this.loading = new Map(); // role -> Promise<modelId> (dedupe concurrent loads)
+    this.extra = new Map(); // role -> spec, registered at runtime (e.g. P2P delegated)
     installGuards();
+  }
+
+  // Register a model spec at runtime (e.g. a delegated big planner for P2P).
+  // Spec may include `delegate: { providerPublicKey, timeout, fallbackToLocal }`.
+  registerModel(role, spec) {
+    this.extra.set(role, spec);
+    return role;
   }
 
   // Clean any orphan worker/lock before the first load of the run.
@@ -122,15 +130,18 @@ export class QvacManager {
     if (this.warm.has(role)) return this.warm.get(role);
     if (this.loading.has(role)) return this.loading.get(role);
 
-    const cfg = MODELS[role];
+    const cfg = MODELS[role] ?? this.extra.get(role);
     if (!cfg) throw new Error(`qvac: unknown model role "${role}"`);
 
     const t0 = Date.now();
-    this.log({ phase: "qvac", msg: `loading ${role}`, modelType: cfg.modelType });
+    this.log({ phase: "qvac", msg: `loading ${role}`, modelType: cfg.modelType, delegated: !!cfg.delegate });
     const p = loadModel({
       modelSrc: cfg.modelSrc,
       modelType: cfg.modelType,
       modelConfig: cfg.modelConfig,
+      // P2P: run on a peer when `delegate` is set (fallbackToLocal keeps us alive
+      // if the peer is down). Undefined for local-only models.
+      ...(cfg.delegate ? { delegate: cfg.delegate } : {}),
     })
       .then((modelId) => {
         this.warm.set(role, modelId);

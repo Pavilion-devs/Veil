@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 import { connectPeer, handsFromPeer } from "./ipc.js";
 import { QvacManager } from "./qvac.js";
 import { attachBrain } from "./brainHandlers.js";
+import { PeerLink } from "./p2p.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const LOG_DIR = path.join(HERE, "logs");
@@ -48,8 +49,22 @@ async function main() {
   const peer = await connectPeer({ socketPath: opts.socket });
   const hands = handsFromPeer(peer);
 
+  // P2P (§6): if a peer key is configured, hard steps delegate to the big model
+  // on the teammate's box. Pre-warm the DHT connection so the first call is fast.
+  let peerLink = null;
+  if (process.env.VEIL_PEER_KEY) {
+    try {
+      peerLink = new PeerLink({ qvac, providerPublicKey: process.env.VEIL_PEER_KEY, log: (o) => console.log(`[p2p] ${o.msg}`) });
+      const { online } = await peerLink.prewarm();
+      console.log(`[brain] P2P peer ${online ? "online" : "offline (will fall back to local)"}`);
+    } catch (e) {
+      console.log(`[brain] P2P disabled: ${e.message}`);
+      peerLink = null;
+    }
+  }
+
   // Register the Brain API (runTurn/cancel + streaming mic + event streaming).
-  attachBrain(peer, { qvac, hands, logDir: LOG_DIR });
+  attachBrain(peer, { qvac, hands, logDir: LOG_DIR, peerLink });
   console.log(`[brain] connected to hands at ${opts.socket}; ready for runTurn`);
 
   // When the app disconnects, shut the worker down cleanly (no stale lock).

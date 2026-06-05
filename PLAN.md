@@ -160,7 +160,7 @@ Unix domain socket (fallback: localhost TCP), **newline-delimited JSON**, `{id, 
 | **2. Eyes & hands** | Jun 6–8 | clicky builds; `AXTreeReader` + `Actuator` + `BrainClient` socket; real capture + AX + click/type. **Brain side ✅: full bidirectional transport — Hands API (`ipc.js`/`handsServer.js`) AND Brain API (`brainMain.js`/`refApp.js`: `runTurn`/`cancel` + `transcript`/`step`/`speak`/`done` + cancel) tested over a real socket; app-quit auto-cleanup verified; wire locked in `brain/PROTOCOL.md`.** Swift peer = teammate's lane. |
 | **3. Real loop (MVP)** | Jun 9–11 | Voice → real AX-grounded computer-use on Notes + PDF viewer, with verify + overlay. **Brain side ✅: streaming mic STT (`runTurn {audio:true}` → Whisper+Silero VAD over the socket, `streamingAcceptance.js` 3/3); `brainHandlers.js` shared by entrypoint+tests.** |
 | **4. Hero skills** | Jun 12–13 | Health (MedPsy labs) + money (testnet wallet + confirm). **Health ✅ (brain side): `query_health` → doctr OCR → MedPsy → speak; `skills/health.js`, `healthAcceptance.js` 2/2.** Wallet next (needs real Chrome grounding). |
-| **5. P2P** | Jun 14 | Delegate hard step to teammate's peer; fallback works |
+| **5. P2P** | Jun 14 | Delegate hard step to teammate's peer; fallback works. **Brain side ✅ scaffold: `p2p.js` PeerLink (delegated big planner + `fallbackToLocal`), escalate-on-struggle routing + `delegate` event, `peerProvider.js`; `p2pAcceptance.js` 4/4 (provider/offline/fallback/routing on one machine). Cross-machine offload pending the peer's box.** |
 | **6. Polish + artifacts** | Jun 15–16 | Structured logs, **demo video**, repro docs, hardware proof, build-in-public |
 | **7. Submit** | Jun 17 | Early-bird submission. Jun 18–21 = buffer/fixes |
 

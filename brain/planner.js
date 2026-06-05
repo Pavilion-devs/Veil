@@ -117,9 +117,10 @@ async function complete(modelId, messages) {
 
 // Decide the next action. `messages` is the running planner conversation
 // (system + alternating screen/feedback turns) maintained by the orchestrator.
-// Returns { action, valid, reason, raw, repaired }.
-export async function plan({ qvac, messages, elements, log = () => {} }) {
-  const modelId = await qvac.get("planner");
+// `role` selects the model tier: "planner" (local) or a delegated big planner
+// for hard steps routed to a P2P peer. Returns { action, valid, reason, raw, repaired }.
+export async function plan({ qvac, messages, elements, log = () => {}, role = "planner" }) {
+  const modelId = await qvac.get(role);
 
   const t0 = Date.now();
   let raw = await complete(modelId, messages);
